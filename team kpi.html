@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPI Classification Game - Leading vs Lagging Indicators</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .game-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+            min-height: 600px;
+        }
+
+        .kpi-list {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border: 2px dashed #dee2e6;
+        }
+
+        .drop-zone {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border: 3px dashed #6c757d;
+            min-height: 400px;
+            transition: all 0.3s ease;
+        }
+
+        .drop-zone.leading {
+            border-color: #28a745;
+        }
+
+        .drop-zone.lagging {
+            border-color: #dc3545;
+        }
+
+        .drop-zone.drag-over {
+            background: #e9ecef;
+            transform: scale(1.02);
+        }
+
+        .zone-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .leading .zone-title {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .lagging .zone-title {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .kpi-item {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            cursor: grab;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .kpi-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .kpi-item.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+        }
+
+        .kpi-item.correct {
+            background: #d4edda;
+            border-color: #28a745;
+            animation: glow-green 0.6s ease-in-out;
+        }
+
+        .kpi-item.incorrect {
+            background: #f8d7da;
+            border-color: #dc3545;
+            animation: glow-red 0.6s ease-in-out;
+        }
+
+        @keyframes glow-green {
+            0%, 100% { box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            50% { box-shadow: 0 0 20px rgba(40, 167, 69, 0.6); }
+        }
+
+        @keyframes glow-red {
+            0%, 100% { box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            50% { box-shadow: 0 0 20px rgba(220, 53, 69, 0.6); }
+        }
+
+        .kpi-title {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+
+        .rationale {
+            font-size: 0.9em;
+            color: #6c757d;
+            font-style: italic;
+            margin-top: 10px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .rationale.show {
+            display: block;
+        }
+
+        .score-board {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            min-width: 200px;
+        }
+
+        .score {
+            font-size: 1.2em;
+            margin: 5px 0;
+        }
+
+        .correct-score {
+            color: #28a745;
+        }
+
+        .incorrect-score {
+            color: #dc3545;
+        }
+
+        .reset-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .reset-btn:hover {
+            background: #0056b3;
+        }
+
+        .instructions {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 30px;
+            color: #0066cc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 KPI Classification Game</h1>
+            <p>Drag and drop KPIs into the correct category: Leading or Lagging Indicators</p>
+        </div>
+
+        <div class="instructions">
+            <strong>Instructions:</strong> Drag each KPI from the left column into either the "Leading Indicators" or "Lagging Indicators" box. 
+            Leading indicators predict future performance, while lagging indicators measure past results. 
+            Correct placements will glow green and show the rationale, incorrect ones will glow red.
+        </div>
+
+        <div class="game-area">
+            <div class="kpi-list">
+                <h3 style="text-align: center; margin-bottom: 20px; color: #2c3e50;">📋 KPIs to Classify</h3>
+                <div id="kpi-container"></div>
+            </div>
+
+            <div class="drop-zone leading" id="leading-zone">
+                <div class="zone-title">📈 Leading Indicators</div>
+                <p style="text-align: center; color: #6c757d; margin-bottom: 20px;">Predictive measures that signal future performance</p>
+            </div>
+
+            <div class="drop-zone lagging" id="lagging-zone">
+                <div class="zone-title">📊 Lagging Indicators</div>
+                <p style="text-align: center; color: #6c757d; margin-bottom: 20px;">Outcome measures that reflect past performance</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="score-board">
+        <h3>🏆 Score</h3>
+        <div class="score correct-score">Correct: <span id="correct-count">0</span></div>
+        <div class="score incorrect-score">Incorrect: <span id="incorrect-count">0</span></div>
+        <div class="score">Total: <span id="total-count">0</span>/25</div>
+        <button class="reset-btn" onclick="resetGame()">🔄 Reset Game</button>
+    </div>
+
+    <script>
+        const kpis = [
+            {id: 1, title: "% Revenue from Integrated-Solution Deals", type: "Lagging", rationale: "Outcome measure of the new strategy's commercial success."},
+            {id: 2, title: "Average # Customer Functions Engaged per Opportunity", type: "Leading", rationale: "Early signal of broad stakeholder coverage needed for solution wins."},
+            {id: 3, title: "Win-Rate on Multi-Unit Bids", type: "Lagging", rationale: "Confirms competitive effectiveness once deals are decided."},
+            {id: 4, title: "360° Peer-Collaboration Score per Rep", type: "Leading", rationale: "Captures cross-functional behaviour before revenue materialises."},
+            {id: 5, title: "Professional-Services Utilisation Hours on Active Deals", type: "Leading", rationale: "Shows whether specialists are being pulled into opportunities."},
+            {id: 6, title: "Sales-Cycle Length for Solution Deals", type: "Lagging", rationale: "Reveals process efficiency only after deals move through the funnel."},
+            {id: 7, title: "Training Certification Completion Rate", type: "Leading", rationale: "Indicates capability building in flight, preceding performance change."},
+            {id: 8, title: "Post-Training Field-Coaching Score Improvement", type: "Leading", rationale: "Behaviour-change evidence observed quickly in customer meetings."},
+            {id: 9, title: "Cross-Sell Revenue", type: "Lagging", rationale: "Monetary result of selling across divisions to existing accounts."},
+            {id: 10, title: "Attach Rate (% customers buying ≥2 products)", type: "Lagging", rationale: "Outcome gauge of product-penetration success."},
+            {id: 11, title: "Average Revenue per Account (ARPA)", type: "Lagging", rationale: "Financial health metric—bundling should lift account value over time."},
+            {id: 12, title: "Sales Velocity", type: "Leading", rationale: "Combines pipeline value, win-rate & cycle time—predicts future revenue."},
+            {id: 13, title: "Collaboration Index (joint initiatives per quarter)", type: "Leading", rationale: "Quantifies frequency/quality of cross-unit work before outcomes."},
+            {id: 14, title: "Knowledge-Sharing Participation", type: "Leading", rationale: "Tracks attendance in cross-training sessions—precursor to behaviour shift."},
+            {id: 15, title: "Customer Satisfaction – Team Deals", type: "Lagging", rationale: "Post-delivery rating of multi-division solutions; reinforces customer lens."},
+            {id: 16, title: "Product Penetration Rate (% customers using multiple products)", type: "Lagging", rationale: "Shows breadth of portfolio adoption inside accounts."},
+            {id: 17, title: "Cross-Sell Conversion Rate", type: "Lagging", rationale: "Efficiency of turning cross-sell opportunities into bookings."},
+            {id: 18, title: "Team Bonus Achievement", type: "Lagging", rationale: "Indicates whether team incentives are attainable and motivating."},
+            {id: 19, title: "Team Engagement in Cross-Selling (% reps involved)", type: "Leading", rationale: "Behaviour metric pointing to culture shift toward joint selling."},
+            {id: 20, title: "Implementation Success Rate", type: "Lagging", rationale: "Quality control: percentage of solution deployments meeting scope/ROI."},
+            {id: 21, title: "Voluntary Attrition of A-Players", type: "Lagging", rationale: "Health check on morale under new comp & training regimes."},
+            {id: 22, title: "Retention Rate of Multi-Product Customers", type: "Lagging", rationale: "Sticky revenue effect of integrated-solution value."},
+            {id: 23, title: "Net Promoter Score – Integrated Solutions", type: "Lagging", rationale: "Advocacy indicator specific to team-delivered offerings."},
+            {id: 24, title: "Cross-Sell Qualified Opportunities", type: "Leading", rationale: "Pipeline measure of accounts ready for multi-product pitches."},
+            {id: 25, title: "Time to Cross-Sell (first sale → cross-sell)", type: "Leading", rationale: "Speed metric; shorter time suggests reps are engaging wider needs early."}
+        ];
+
+        let correctCount = 0;
+        let incorrectCount = 0;
+        let totalCount = 0;
+
+        function initializeGame() {
+            const container = document.getElementById('kpi-container');
+            container.innerHTML = '';
+            
+            // Shuffle KPIs for random order
+            const shuffledKPIs = [...kpis].sort(() => Math.random() - 0.5);
+            
+            shuffledKPIs.forEach(kpi => {
+                const kpiElement = document.createElement('div');
+                kpiElement.className = 'kpi-item';
+                kpiElement.draggable = true;
+                kpiElement.dataset.id = kpi.id;
+                kpiElement.dataset.type = kpi.type;
+                
+                kpiElement.innerHTML = `
+                    <div class="kpi-title">${kpi.title}</div>
+                    <div class="rationale">${kpi.rationale}</div>
+                `;
+                
+                kpiElement.addEventListener('dragstart', handleDragStart);
+                kpiElement.addEventListener('dragend', handleDragEnd);
+                
+                container.appendChild(kpiElement);
+            });
+            
+            setupDropZones();
+        }
+
+        function setupDropZones() {
+            const leadingZone = document.getElementById('leading-zone');
+            const laggingZone = document.getElementById('lagging-zone');
+            
+            [leadingZone, laggingZone].forEach(zone => {
+                zone.addEventListener('dragover', handleDragOver);
+                zone.addEventListener('drop', handleDrop);
+                zone.addEventListener('dragenter', handleDragEnter);
+                zone.addEventListener('dragleave', handleDragLeave);
+            });
+        }
+
+        function handleDragStart(e) {
+            e.dataTransfer.setData('text/plain', e.target.dataset.id);
+            e.target.classList.add('dragging');
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+        }
+
+        function handleDragEnter(e) {
+            e.preventDefault();
+            e.target.closest('.drop-zone').classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            if (!e.target.closest('.drop-zone').contains(e.relatedTarget)) {
+                e.target.closest('.drop-zone').classList.remove('drag-over');
+            }
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const dropZone = e.target.closest('.drop-zone');
+            dropZone.classList.remove('drag-over');
+            
+            const kpiId = e.dataTransfer.getData('text/plain');
+            const kpiElement = document.querySelector(`[data-id="${kpiId}"]`);
+            const kpiType = kpiElement.dataset.type;
+            const zoneType = dropZone.id === 'leading-zone' ? 'Leading' : 'Lagging';
+            
+            // Remove previous classification classes
+            kpiElement.classList.remove('correct', 'incorrect');
+            
+            // Check if correct
+            const isCorrect = kpiType === zoneType;
+            
+            if (isCorrect) {
+                kpiElement.classList.add('correct');
+                correctCount++;
+            } else {
+                kpiElement.classList.add('incorrect');
+                incorrectCount++;
+            }
+            
+            totalCount++;
+            updateScore();
+            
+            // Show rationale
+            const rationale = kpiElement.querySelector('.rationale');
+            rationale.classList.add('show');
+            
+            // Move element to drop zone
+            dropZone.appendChild(kpiElement);
+            
+            // Check if game is complete
+            if (totalCount === 25) {
+                setTimeout(() => {
+                    alert(`Game Complete! 🎉\nCorrect: ${correctCount}\nIncorrect: ${incorrectCount}\nScore: ${Math.round((correctCount/25)*100)}%`);
+                }, 500);
+            }
+        }
+
+        function updateScore() {
+            document.getElementById('correct-count').textContent = correctCount;
+            document.getElementById('incorrect-count').textContent = incorrectCount;
+            document.getElementById('total-count').textContent = totalCount;
+        }
+
+        function resetGame() {
+            correctCount = 0;
+            incorrectCount = 0;
+            totalCount = 0;
+            updateScore();
+            
+            // Clear drop zones
+            document.getElementById('leading-zone').innerHTML = `
+                <div class="zone-title">📈 Leading Indicators</div>
+                <p style="text-align: center; color: #6c757d; margin-bottom: 20px;">Predictive measures that signal future performance</p>
+            `;
+            document.getElementById('lagging-zone').innerHTML = `
+                <div class="zone-title">📊 Lagging Indicators</div>
+                <p style="text-align: center; color: #6c757d; margin-bottom: 20px;">Outcome measures that reflect past performance</p>
+            `;
+            
+            initializeGame();
+        }
+
+        // Initialize the game when page loads
+        document.addEventListener('DOMContentLoaded', initializeGame);
+    </script>
+    <footer style="margin-top: 50px; text-align: center; color: #7f8c8d; font-size: 14px;">
+        <p>Team selling KPI Classification | Curator Dr, Pravat, GIM. Goa</p>
+    </footer>
+</body>
+</html>
